@@ -1,18 +1,14 @@
-curl -X POST http://localhost/wsphp/index.php -H "Content-Type: application/json" -H "Accept:application/xml" -d {\"nome\":\"jjj\",\"valore\":\"1\"} -v
+# GET
+curl -X GET http://localhost/wsphp/index.php -H "Accept: application/json"
 
-curl -X POST http://localhost/wsphp/index.php -H "Content-Type: application/xml" -H "Accept:application/xml" -d "<?xml version=\"1.0\"?><doc><nome>fff</nome><valore>2</valore></doc>" -v
+# POST JSON
+curl -X POST http://localhost/wsphp/index.php -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"nome\":\"prova\",\"valore\":100}"
 
-curl -X POST http://localhost/wsphp/index.php -H "Content-Type: application/xml" -H "Accept:application/xml" -d <array><nome>fff</nome><valore>2</valore><nome>aaa</nome><valore>4</valore></array> -v
+# POST XML
+curl -X POST http://localhost/wsphp/index.php -H "Content-Type: application/xml" -H "Accept: application/xml" -d "<?xml version=\"1.0\"?><root><nome>prova</nome><valore>100</valore></root>"
 
-<?xml version="1.0"?><doc><rec><nome>fff</nome><valore>2</valore></rec><rec><nome>aaa</nome><valore>4</valore></rec></doc>
+# PUT JSON
+curl -X PUT http://localhost/wsphp/index.php -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"nome\":\"aggiornato\",\"valore\":50}"
 
-"rec": [
-        {
-            "nome": "fff",
-            "valore": "2"
-        },
-        {
-            "nome": "aaa",
-            "valore": "4"
-        }
-    ]
+# DELETE JSON
+curl -X DELETE http://localhost/wsphp/index.php -H "Content-Type: application/json" -H "Accept: application/json" -d "{\"nome\":\"cancella\",\"valore\":999}"
