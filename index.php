@@ -1,54 +1,72 @@
 <?php
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
 header("Access-Control-Allow-Headers: Content-Type, Accept");
 
-$metodo = $_SERVER["REQUEST_METHOD"];
-$contentType = $_SERVER["CONTENT_TYPE"] ?? "application/json";
-$accept = $_SERVER["HTTP_ACCEPT"] ?? "application/json";
+if (($_SERVER["REQUEST_METHOD"] ?? "") === "OPTIONS") {
+    http_response_code(204);
+    exit;
+}
 
-// Legge i dati in input
-$body = file_get_contents('php://input');
+$metodo = $_SERVER["REQUEST_METHOD"] ?? "GET";
+$ct = strtolower($_SERVER["CONTENT_TYPE"] ?? "application/json");
+$accept = strtolower($_SERVER["HTTP_ACCEPT"] ?? "application/json");
+
+$isXmlIn = (strpos($ct, "xml") !== false);
+$isXmlOut = (strpos($accept, "xml") !== false);
+
+$body = file_get_contents("php://input");
 $data = [];
 
 if (!empty($body)) {
-    if (strpos($contentType, 'xml') !== false) {
-        $xml = simplexml_load_string($body);
-        $data = json_decode(json_encode($xml), true);
+    if ($isXmlIn) {
+        $xml = @simplexml_load_string($body);
+        if ($xml !== false) {
+            $data = json_decode(json_encode($xml), true) ?? [];
+        }
     } else {
-        $data = json_decode($body, true) ?? [];
+        $tmp = json_decode($body, true);
+        if (is_array($tmp)) $data = $tmp;
     }
 }
 
-// Funzione per rispondere
-function respond($data, $accept) {
-    if (strpos($accept, 'xml') !== false) {
-        header("Content-Type: application/xml");
-        $xml = new SimpleXMLElement('<root/>');
-        array_walk_recursive($data, array($xml, 'addChild'));
-        echo $xml->asXML();
-    } else {
-        header("Content-Type: application/json");
-        echo json_encode($data);
-    }
+switch ($metodo) {
+    case "GET":
+        $response = ["metodo" => "GET", "nome" => "demo", "valore" => 1];
+        break;
+
+    case "POST":
+        $data["metodo"] = "POST";
+        $data["valore"] = (int)($data["valore"] ?? 0) + 2000;
+        $response = $data;
+        break;
+
+    case "PUT":
+        $data["metodo"] = "PUT";
+        $data["valore"] = (int)($data["valore"] ?? 0) + 1;
+        $response = $data;
+        break;
+
+    case "DELETE":
+        $response = ["metodo" => "DELETE", "ok" => true];
+        break;
+
+    default:
+        http_response_code(405);
+        $response = ["errore" => "Metodo non supportato"];
+        break;
 }
 
-if ($metodo == "GET") {
-    respond(["metodo" => "GET", "messaggio" => "Recuperato con successo"], $accept);
+if ($isXmlOut) {
+    header("Content-Type: application/xml; charset=UTF-8");
+    $xml = new SimpleXMLElement("<root/>");
+    array_walk_recursive($response, function ($value, $key) use ($xml) {
+        $xml->addChild($key, htmlspecialchars((string)$value));
+    });
+    echo $xml->asXML();
+} else {
+    header("Content-Type: application/json; charset=UTF-8");
+    echo json_encode($response);
 }
-elseif ($metodo == "POST") {
-    $data["metodo"] = "POST";
-    $data["valore"] = ($data["valore"] ?? 0) + 2000;
-    respond($data, $accept);
-}
-elseif ($metodo == "PUT") {
-    $data["metodo"] = "PUT";
-    $data["valore"] = ($data["valore"] ?? 0) * 2;
-    respond($data, $accept);
-}
-elseif ($metodo == "DELETE") {
-    $data["metodo"] = "DELETE";
-    $data["eliminato"] = true;
-    respond($data, $accept);
-}
+
 ?>
